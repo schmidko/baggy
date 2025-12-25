@@ -1,0 +1,18 @@
+## Interface: 110002
+## Title: Baggy
+## Notes: A modern glassy bag replacement.
+## Author: Antigravity
+## Version: 1.0.0
+## SavedVariables: BaggyDB
+
+# Libraries
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\AceAddon-3.0\AceAddon-3.0.lua
+Libs\AceDB-3.0\AceDB-3.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+
+# Core
+Core.lua
+
