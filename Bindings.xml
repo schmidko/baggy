@@ -1,0 +1,5 @@
+<Bindings>
+    <Binding name="BAGGY_TOGGLE" header="BAGGY_HEADER" runOnUp="true">
+        Baggy:Toggle()
+    </Binding>
+</Bindings>
