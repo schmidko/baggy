@@ -35,8 +35,9 @@ local function ApplyGlassStyle(frame, alpha)
         })
     end
     alpha = alpha or 0.5
+    local c = Baggy.db.profile.borderColor
     frame:SetBackdropColor(0, 0, 0, alpha)
-    frame:SetBackdropBorderColor(0.6, 0.2, 0.8, 0.8) -- Purple Border
+    frame:SetBackdropBorderColor(c.r, c.g, c.b, c.a)
 
     -- Outer Glow (Simulated with a larger frame behind or shadow textures)
     if not frame.glow then
@@ -49,9 +50,9 @@ local function ApplyGlassStyle(frame, alpha)
             edgeFile = "Interface\\GLOWS\\Gold_Glow", -- Using Blizzard glow texture
             edgeSize = 12,
         })
-        glow:SetBackdropBorderColor(0.6, 0.2, 0.8, 0.5)
         frame.glow = glow
     end
+    frame.glow:SetBackdropBorderColor(c.r, c.g, c.b, 0.5)
 end
 
 function Baggy:ApplyOpaqueStyle(frame)
@@ -63,8 +64,9 @@ function Baggy:ApplyOpaqueStyle(frame)
             insets = { left = 0, right = 0, top = 0, bottom = 0 },
         })
     end
+    local c = self.db.profile.borderColor
     frame:SetBackdropColor(0.05, 0.05, 0.05, 0.95) -- Nearly opaque dark background
-    frame:SetBackdropBorderColor(0.6, 0.2, 0.8, 0.8) -- Purple Border
+    frame:SetBackdropBorderColor(c.r, c.g, c.b, c.a) -- Purple Border
 
     -- Outer Glow
     if not frame.glow then
@@ -76,9 +78,9 @@ function Baggy:ApplyOpaqueStyle(frame)
             edgeFile = "Interface\\GLOWS\\Gold_Glow",
             edgeSize = 12,
         })
-        glow:SetBackdropBorderColor(0.6, 0.2, 0.8, 0.5)
         frame.glow = glow
     end
+    frame.glow:SetBackdropBorderColor(c.r, c.g, c.b, 0.5)
 end
 
 -----------------------------------------------------------
@@ -320,6 +322,40 @@ function Baggy:UpdateSearch(text)
     end
 end
 
+function Baggy:UpdateColors()
+    local c = self.db.profile.borderColor
+    
+    -- Update Main Frame
+    if self.MainFrame then
+        self.MainFrame:SetBackdropBorderColor(c.r, c.g, c.b, c.a)
+        if self.MainFrame.glow then
+            self.MainFrame.glow:SetBackdropBorderColor(c.r, c.g, c.b, 0.5)
+        end
+        if self.MainFrame.title then
+            self.MainFrame.title:SetTextColor(c.r, c.g, c.b, 1)
+        end
+        
+        -- Update Search Box Borders if present (it's a child EditBox)
+        for _, child in ipairs({self.MainFrame:GetChildren()}) do
+            if child:GetObjectType() == "EditBox" and child.glow then
+                 child:SetBackdropBorderColor(c.r, c.g, c.b, c.a)
+                 child.glow:SetBackdropBorderColor(c.r, c.g, c.b, 0.5)
+            end
+        end
+    end
+
+    -- Update Settings Frame
+    if self.settingsFrame then
+        self.settingsFrame:SetBackdropBorderColor(c.r, c.g, c.b, c.a)
+        if self.settingsFrame.glow then
+            self.settingsFrame.glow:SetBackdropBorderColor(c.r, c.g, c.b, 0.5)
+        end
+        if self.settingsFrame.title then
+            self.settingsFrame.title:SetTextColor(c.r, c.g, c.b, 1)
+        end
+    end
+end
+
 -----------------------------------------------------------
 -- Settings UI (moved to Settings.lua)
 -----------------------------------------------------------
@@ -347,7 +383,9 @@ function Baggy:CreateFrame()
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", frame, "TOPLEFT", PADDING, -15)
     title:SetText("Baggy")
-    title:SetTextColor(0.8, 0.4, 1, 1) -- Purple Title
+    local c = self.db.profile.borderColor
+    title:SetTextColor(c.r, c.g, c.b, 1) -- Title matches border
+    frame.title = title
 
     -- Capture Key Bindings
     frame:EnableKeyboard(true)
@@ -358,10 +396,27 @@ function Baggy:CreateFrame()
         Baggy:UpdateBags()
     end)
 
-    local searchBox = CreateFrame("EditBox", nil, frame, "SearchBoxTemplate")
+    local searchBox = CreateFrame("EditBox", nil, frame, "SearchBoxTemplate, BackdropTemplate")
     searchBox:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -70, -12)
-    searchBox:SetSize(150, 20)
+    searchBox:SetSize(150, 24)
     searchBox:SetAutoFocus(false)
+    
+    -- Hide default blizzard border textures to use our custom style
+    if searchBox.Left then searchBox.Left:Hide() end
+    if searchBox.Middle then searchBox.Middle:Hide() end
+    if searchBox.Right then searchBox.Right:Hide() end
+    
+    -- Apply Glass Style
+    ApplyGlassStyle(searchBox, 0.2)
+    
+    -- Adjust text insets to not overlap with the border/icon
+    searchBox:SetTextInsets(25, 15, 0, 0)
+
+    -- Adjust icon position (padding from left)
+    if searchBox.searchIcon then
+        searchBox.searchIcon:SetPoint("LEFT", searchBox, "LEFT", 6, 0)
+    end
+
     searchBox:SetScript("OnTextChanged", function(self)
         SearchBoxTemplate_OnTextChanged(self)
         Baggy:UpdateSearch(self:GetText())
@@ -410,6 +465,7 @@ function Baggy:CreateFrame()
 
     frame:Hide()
     BaggyFrame = frame
+    self.MainFrame = frame
 end
 
 
