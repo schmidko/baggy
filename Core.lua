@@ -289,35 +289,41 @@ end
 -----------------------------------------------------------
 
 function Baggy:UpdateSearch(text)
+    -- If text is nil or empty, show everything and enable interaction
     if not text or text == "" then
-        for _, slot in ipairs(containerItems) do
-            slot:SetAlpha(1)
-            slot:EnableMouse(true)
+        if self.slots then
+            for _, slot in ipairs(self.slots) do
+                slot:SetAlpha(1)
+                slot:EnableMouse(true)
+            end
         end
         return
     end
 
     text = text:lower()
-    for _, slot in ipairs(containerItems) do
-        local bagID = slot:GetParent():GetID()
-        local slotID = slot:GetID()
-        local itemInfo = C_Container.GetContainerItemInfo(bagID, slotID)
-
-        
-        local match = false
-        if itemInfo and itemInfo.hyperlink then
-            local itemName = C_Item.GetItemInfo(itemInfo.hyperlink)
-            if itemName and itemName:lower():find(text, 1, true) then
-                match = true
+    
+    if self.slots then
+        for _, slot in ipairs(self.slots) do
+            local match = false
+            
+            -- We need to fetch item info. 
+            -- Note: We rely on slot.bagID and slot.slotID being set in UpdateBags
+            if slot.bagID and slot.slotID then
+                local itemInfo = C_Container.GetContainerItemInfo(slot.bagID, slot.slotID)
+                if itemInfo and itemInfo.hyperlink then
+                    local itemName = C_Item.GetItemInfo(itemInfo.hyperlink)
+                    if itemName and itemName:lower():find(text, 1, true) then
+                        match = true
+                    end
+                end
             end
-        end
 
-        if match then
-            slot:SetAlpha(1)
-            slot:EnableMouse(true)
-        else
-            slot:SetAlpha(0.2)
-            slot:EnableMouse(false)
+            if match then
+                slot:SetAlpha(1)
+            else
+                slot:SetAlpha(0.1) -- Dim non-matches significantly
+            end
+            slot:EnableMouse(true) -- Always enable mouse so items can be moved/dropped
         end
     end
 end
