@@ -267,6 +267,10 @@ function Baggy:CreateColorPickerFrame()
     end
     
     picker:Hide()
+    
+    -- Register for ESC close
+    tinsert(UISpecialFrames, "BaggyColorPicker")
+    
     return picker
 end
 
@@ -429,5 +433,9 @@ function Baggy:CreateSettingsFrame()
     settings.swatch = colorSwatch
     
     settings:Hide()
+    
+    -- Register for ESC close
+    tinsert(UISpecialFrames, "BaggySettingsFrame")
+    
     return settings
 end

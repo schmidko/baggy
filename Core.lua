@@ -177,6 +177,11 @@ function Baggy:UpdateBags()
             slot.qualityBorder:SetFrameLevel(slot:GetFrameLevel() + 1)
             slot.qualityBorder:Hide()
             
+            -- Highlight Texture (Hover Glow)
+            slot:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+            slot:GetHighlightTexture():SetBlendMode("ADD")
+
+            
             -- Scripts for interaction
             slot:SetScript("OnEnter", function(self)
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -294,6 +299,15 @@ function Baggy:UpdateSearch(text)
         if self.slots then
             for _, slot in ipairs(self.slots) do
                 slot:SetAlpha(1)
+                -- Restore Components
+                if slot.icon then slot.icon:SetAlpha(1) end
+                if slot.count then slot.count:SetAlpha(1) end
+                if slot.qualityBorder then slot.qualityBorder:SetAlpha(1) end
+                
+                -- Restore Backdrop
+                slot:SetBackdropColor(1, 1, 1, 0.05)
+                slot:SetBackdropBorderColor(1, 1, 1, 0.1)
+                
                 slot:EnableMouse(true)
             end
         end
@@ -317,13 +331,29 @@ function Baggy:UpdateSearch(text)
                     end
                 end
             end
+            
+            slot:EnableMouse(true) -- Always enable mouse so items can be moved/dropped
 
             if match then
+                -- Match: Full Opacity
                 slot:SetAlpha(1)
+                if slot.icon then slot.icon:SetAlpha(1) end
+                if slot.count then slot.count:SetAlpha(1) end
+                if slot.qualityBorder then slot.qualityBorder:SetAlpha(1) end
+                
+                slot:SetBackdropColor(1, 1, 1, 0.05)
+                slot:SetBackdropBorderColor(1, 1, 1, 0.1)
             else
-                slot:SetAlpha(0.1) -- Dim non-matches significantly
+                -- No Match: Dim Content, but keep Slot Opaque (for Highlight)
+                slot:SetAlpha(1)
+                if slot.icon then slot.icon:SetAlpha(0.1) end
+                if slot.count then slot.count:SetAlpha(0.1) end
+                if slot.qualityBorder then slot.qualityBorder:SetAlpha(0.1) end
+                
+                -- Dim Backdrop significantly to look "blacked out"
+                slot:SetBackdropColor(1, 1, 1, 0.005)
+                slot:SetBackdropBorderColor(1, 1, 1, 0.01)
             end
-            slot:EnableMouse(true) -- Always enable mouse so items can be moved/dropped
         end
     end
 end
@@ -472,6 +502,9 @@ function Baggy:CreateFrame()
     frame:Hide()
     BaggyFrame = frame
     self.MainFrame = frame
+    
+    -- Register for ESC close
+    tinsert(UISpecialFrames, "BaggyMainFrame")
 end
 
 
