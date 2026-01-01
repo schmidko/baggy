@@ -29,6 +29,7 @@ Baggy.DB_DEFAULTS = {
         slotsPerRow = 18,
         showQualityBorder = true,
         bagOpacity = 0.5,
+        borderWidth = 1,
         borderColor = { r = 0.6, g = 0.2, b = 0.8, a = 0.8 },
     },
 }
@@ -66,6 +67,7 @@ function Baggy:CreateColorPickerFrame()
     -- Current color state
     local r, g, b = 1, 1, 1
     local currentA = 1
+    local callback = nil
     
     -- ------------------------------------------------------
     -- Custom Spectrum Square (Hue x Lightness)
@@ -233,14 +235,8 @@ function Baggy:CreateColorPickerFrame()
     okBtn:SetText("OK")
     
     okBtn:SetScript("OnClick", function()
-        Baggy.db.profile.borderColor.r = r
-        Baggy.db.profile.borderColor.g = g
-        Baggy.db.profile.borderColor.b = b
-        Baggy.db.profile.borderColor.a = currentA
-        Baggy:UpdateColors()
-        
-        if BaggySettingsFrame and BaggySettingsFrame.swatch then
-            BaggySettingsFrame.swatch:SetBackdropColor(r, g, b, currentA)
+        if callback then
+            callback(r, g, b, currentA)
         end
         picker:Hide()
     end)
@@ -255,14 +251,13 @@ function Baggy:CreateColorPickerFrame()
     end)
     
     -- Setup Function
-    picker.Setup = function(self)
-        local c = Baggy.db.profile.borderColor
-        r, g, b, currentA = c.r, c.g, c.b, c.a
+    picker.Setup = function(self, initialR, initialG, initialB, initialA, cb)
+        r, g, b, currentA = initialR, initialG, initialB, initialA
+        callback = cb
         alphaSlider:SetValue(currentA)
         UpdatePreview()
         
-        -- Note: We don't reverse-engineer position from RGB perfectly here (lossy)
-        -- Reset crosshair to center just to be safe, or leave it
+        -- Reset crosshair (approximate)
         crosshair:SetPoint("CENTER", spectrum, "CENTER", 0, 0)
     end
     
@@ -280,7 +275,7 @@ end
 
 function Baggy:CreateSettingsFrame()
     local settings = CreateFrame("Frame", "BaggySettingsFrame", UIParent, "BackdropTemplate")
-    settings:SetSize(400, 450) -- Reduced height since sliders are gone
+    settings:SetSize(400, 500) -- Increased height for new options
     settings:SetPoint("CENTER")
     
     -- FIX: Settings should be above the bag window
@@ -310,12 +305,45 @@ function Baggy:CreateSettingsFrame()
     local close = CreateFrame("Button", nil, settings, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", settings, "TOPRIGHT", -2, -2)
     
-    -- Content Anchor
-    local startY = -60
+    -- Register for ESC close
+    tinsert(UISpecialFrames, "BaggySettingsFrame")
+
+    -- Helper: Create Stylish Header
+    local function CreateHeader(text, relativeTo, yOffset)
+        local header = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        header:SetPoint("TOPLEFT", relativeTo, "BOTTOMLEFT", 0, yOffset or -20)
+        header:SetText(text)
+        header:SetTextColor(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 1)
+        
+        -- Underline
+        local line = settings:CreateTexture(nil, "ARTWORK")
+        line:SetHeight(2)
+        line:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -2)
+        line:SetPoint("RIGHT", settings, "RIGHT", -20, 0)
+        line:SetColorTexture(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 0.5)
+        
+        return header
+    end
+
+    -- ===========================
+    -- SECTION: Layout
+    -- ===========================
     
+    -- Anchor for first element (Header) - relative to title
+    local layoutHeader = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    layoutHeader:SetPoint("TOPLEFT", settings, "TOPLEFT", 20, -50)
+    layoutHeader:SetText("Layout")
+    layoutHeader:SetTextColor(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 1)
+    
+    local layoutLine = settings:CreateTexture(nil, "ARTWORK")
+    layoutLine:SetHeight(2)
+    layoutLine:SetPoint("TOPLEFT", layoutHeader, "BOTTOMLEFT", 0, -2)
+    layoutLine:SetPoint("RIGHT", settings, "RIGHT", -20, 0)
+    layoutLine:SetColorTexture(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 0.5)
+
     -- Slot Size Slider
     local slotSizeLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    slotSizeLabel:SetPoint("TOPLEFT", settings, "TOPLEFT", 20, startY)
+    slotSizeLabel:SetPoint("TOPLEFT", layoutHeader, "BOTTOMLEFT", 0, -20)
     slotSizeLabel:SetText("Item Slot Size:")
     
     local slotSizeSlider = CreateFrame("Slider", "BaggySlotSizeSlider", settings, "OptionsSliderTemplate")
@@ -338,7 +366,7 @@ function Baggy:CreateSettingsFrame()
     
     -- Slots Per Row Slider
     local slotsPerRowLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    slotsPerRowLabel:SetPoint("TOPLEFT", slotSizeSlider, "BOTTOMLEFT", 0, -30)
+    slotsPerRowLabel:SetPoint("TOPLEFT", slotSizeSlider, "BOTTOMLEFT", 0, -20)
     slotsPerRowLabel:SetText("Slots Per Row:")
     
     local slotsPerRowSlider = CreateFrame("Slider", "BaggySlotsPerRowSlider", settings, "OptionsSliderTemplate")
@@ -359,9 +387,38 @@ function Baggy:CreateSettingsFrame()
         Baggy:UpdateBags()
     end)
     
+    -- Border Width Slider (New)
+    local borderWidthLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    borderWidthLabel:SetPoint("TOPLEFT", slotsPerRowSlider, "BOTTOMLEFT", 0, -20)
+    borderWidthLabel:SetText("Border Width:")
+    
+    local borderWidthSlider = CreateFrame("Slider", "BaggyBorderWidthSlider", settings, "OptionsSliderTemplate")
+    borderWidthSlider:SetPoint("TOPLEFT", borderWidthLabel, "BOTTOMLEFT", 0, -10)
+    borderWidthSlider:SetMinMaxValues(1, 5)
+    borderWidthSlider:SetValueStep(1)
+    borderWidthSlider:SetObeyStepOnDrag(true)
+    borderWidthSlider:SetWidth(350)
+    borderWidthSlider:SetValue(self.db.profile.borderWidth)
+    _G[borderWidthSlider:GetName().."Low"]:SetText("1")
+    _G[borderWidthSlider:GetName().."High"]:SetText("5")
+    _G[borderWidthSlider:GetName().."Text"]:SetText(self.db.profile.borderWidth .. " px")
+    
+    borderWidthSlider:SetScript("OnValueChanged", function(self, value)
+        value = math.floor(value + 0.5)
+        _G[self:GetName().."Text"]:SetText(value .. " px")
+        Baggy.db.profile.borderWidth = value
+        Baggy:UpdateColors() -- Updates border size too using SetBackdrop in Core
+    end)
+
+    -- ===========================
+    -- SECTION: Appearance
+    -- ===========================
+
+    local appearanceHeader = CreateHeader("Appearance", borderWidthSlider, -30)
+
     -- Quality Border Checkbox
     local qualityCheckbox = CreateFrame("CheckButton", "BaggyQualityBorderCheckbox", settings, "UICheckButtonTemplate")
-    qualityCheckbox:SetPoint("TOPLEFT", slotsPerRowSlider, "BOTTOMLEFT", 0, -40)
+    qualityCheckbox:SetPoint("TOPLEFT", appearanceHeader, "BOTTOMLEFT", 0, -20)
     qualityCheckbox:SetSize(24, 24)
     qualityCheckbox:SetChecked(self.db.profile.showQualityBorder)
     
@@ -374,9 +431,40 @@ function Baggy:CreateSettingsFrame()
         Baggy:UpdateBags()
     end)
     
+    -- Border Color
+    local borderColorLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    borderColorLabel:SetPoint("TOPLEFT", qualityCheckbox, "BOTTOMLEFT", 0, -20)
+    borderColorLabel:SetText("Border:")
+    
+    local borderColorSwatch = CreateFrame("Button", nil, settings, "BackdropTemplate")
+    borderColorSwatch:SetSize(120, 25)
+    borderColorSwatch:SetPoint("LEFT", borderColorLabel, "RIGHT", 15, 0)
+    borderColorSwatch:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8x8",
+        edgeFile = "Interface\\Buttons\\WHITE8x8",
+        edgeSize = 1,
+    })
+    borderColorSwatch:SetBackdropColor(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, self.db.profile.borderColor.a)
+    borderColorSwatch:SetBackdropBorderColor(1, 1, 1, 1)
+    
+    borderColorSwatch:SetScript("OnClick", function()
+        if not Baggy.colorPicker then
+            Baggy.colorPicker = Baggy:CreateColorPickerFrame()
+        end
+        local c = Baggy.db.profile.borderColor
+        Baggy.colorPicker:Setup(c.r, c.g, c.b, c.a, function(r, g, b, a)
+            Baggy.db.profile.borderColor = { r = r, g = g, b = b, a = a }
+            borderColorSwatch:SetBackdropColor(r, g, b, a)
+            Baggy:UpdateColors()
+        end)
+        Baggy.colorPicker:Show()
+    end)
+    
+    settings.borderSwatch = borderColorSwatch
+
     -- Bag Opacity Slider
     local opacityLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    opacityLabel:SetPoint("TOPLEFT", qualityCheckbox, "BOTTOMLEFT", 0, -30)
+    opacityLabel:SetPoint("TOPLEFT", borderColorLabel, "BOTTOMLEFT", 0, -20)
     opacityLabel:SetText("Bag Window Transparency:")
     
     local opacitySlider = CreateFrame("Slider", "BaggyOpacitySlider", settings, "OptionsSliderTemplate")
@@ -394,48 +482,9 @@ function Baggy:CreateSettingsFrame()
         value = math.floor(value * 100 + 0.5) / 100
         _G[self:GetName().."Text"]:SetText(math.floor(value * 100) .. "%")
         Baggy.db.profile.bagOpacity = value
-        if Baggy.MainFrame then
-            Baggy.MainFrame:SetBackdropColor(0, 0, 0, value)
-        end
+        Baggy:UpdateColors() -- Updates backdrop color alpha
     end)
-
-    -- Border Color Selector
-    local colorLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    colorLabel:SetPoint("TOPLEFT", opacitySlider, "BOTTOMLEFT", 0, -40)
-    colorLabel:SetText("Border Color:")
-    
-    -- Color Swatch (Clickable Button)
-    local colorSwatch = CreateFrame("Button", nil, settings, "BackdropTemplate")
-    colorSwatch:SetSize(200, 40)
-    colorSwatch:SetPoint("LEFT", colorLabel, "RIGHT", 15, 0)
-    
-    colorSwatch:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8x8",
-        edgeFile = "Interface\\Buttons\\WHITE8x8",
-        edgeSize = 1,
-    })
-    colorSwatch:SetBackdropColor(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, self.db.profile.borderColor.a)
-    colorSwatch:SetBackdropBorderColor(1, 1, 1, 1)
-    
-    -- Text hint on button
-    local btnText = colorSwatch:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    btnText:SetPoint("CENTER")
-    btnText:SetText("Click to Change Color")
-    
-    colorSwatch:SetScript("OnClick", function()
-        if not Baggy.colorPicker then
-            Baggy.colorPicker = Baggy:CreateColorPickerFrame()
-        end
-        Baggy.colorPicker:Setup()
-        Baggy.colorPicker:Show()
-    end)
-    
-    settings.swatch = colorSwatch
     
     settings:Hide()
-    
-    -- Register for ESC close
-    tinsert(UISpecialFrames, "BaggySettingsFrame")
-    
     return settings
 end
