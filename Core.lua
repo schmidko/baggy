@@ -14,7 +14,7 @@ local LDBIcon = LibStub("LibDBIcon-1.0")
 local SLOT_SPACING = 4  -- Keep local for now, will be referenced from Settings module
 local PADDING = 15
 local HEADER_SIZE = 60
-local FOOTER_SIZE = 40
+local FOOTER_SIZE = 20
 
 -- Main Frame
 local BaggyFrame = nil
@@ -25,7 +25,7 @@ local containerItems = {}
 -- Glass Design Helpers
 -----------------------------------------------------------
 
-local function ApplyGlassStyle(frame)
+local function ApplyGlassStyle(frame, alphaOverride)
     local edgeSize = Baggy.db.profile.borderWidth
     
     if not frame.backdrop or frame.backdrop.edgeSize ~= edgeSize then
@@ -41,7 +41,7 @@ local function ApplyGlassStyle(frame)
     local c = Baggy.db.profile.borderColor
     
     -- Use fixed dark background with dynamic opacity
-    local alpha = Baggy.db.profile.bagOpacity or 0.5
+    local alpha = alphaOverride or Baggy.db.profile.bagOpacity or 0.5
     frame:SetBackdropColor(0, 0, 0, alpha)
     frame:SetBackdropBorderColor(c.r, c.g, c.b, c.a)
 
@@ -62,8 +62,9 @@ local function ApplyGlassStyle(frame)
 end
 
 -- Deprecating separate OpaqueStyle, as settings now control opacity/color
-function Baggy:ApplyOpaqueStyle(frame)
-    ApplyGlassStyle(frame)
+-- Deprecating separate OpaqueStyle, as settings now control opacity/color
+function Baggy:ApplyOpaqueStyle(frame, alphaOverride)
+    ApplyGlassStyle(frame, alphaOverride)
 end
 
 
@@ -363,7 +364,7 @@ function Baggy:UpdateColors()
 
     -- Update Settings Frame
     if self.settingsFrame then
-        ApplyGlassStyle(self.settingsFrame)
+        ApplyGlassStyle(self.settingsFrame, 1)
         if self.settingsFrame.title then
             self.settingsFrame.title:SetTextColor(c.r, c.g, c.b, 1)
         end
@@ -394,12 +395,12 @@ function Baggy:CreateFrame()
     ApplyGlassStyle(frame)
 
     -- Title
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", frame, "TOPLEFT", PADDING, -15)
-    title:SetText("Baggy")
-    local c = self.db.profile.borderColor
-    title:SetTextColor(c.r, c.g, c.b, 1) -- Title matches border
-    frame.title = title
+    -- local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    -- title:SetPoint("TOPLEFT", frame, "TOPLEFT", PADDING, -15)
+    -- title:SetText("Baggy")
+    -- local c = self.db.profile.borderColor
+    -- title:SetTextColor(c.r, c.g, c.b, 1) -- Title matches border
+    -- frame.title = title
 
     -- Capture Key Bindings
     frame:EnableKeyboard(true)
@@ -412,7 +413,7 @@ function Baggy:CreateFrame()
 
     local searchBox = CreateFrame("EditBox", nil, frame, "SearchBoxTemplate, BackdropTemplate")
     searchBox:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -70, -12)
-    searchBox:SetSize(150, 24)
+    searchBox:SetSize(180, 24)
     searchBox:SetAutoFocus(false)
     
     -- Hide default blizzard border textures to use our custom style

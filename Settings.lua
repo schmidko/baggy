@@ -291,7 +291,7 @@ function Baggy:CreateSettingsFrame()
     
     -- Apply opaque style
     if self.ApplyOpaqueStyle then
-        self:ApplyOpaqueStyle(settings)
+        self:ApplyOpaqueStyle(settings, 1)
     end
     
     -- Title
