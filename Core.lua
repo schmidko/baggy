@@ -97,7 +97,33 @@ end
 
 local BagFrames = {}
 
+function Baggy:UpdateTheme()
+    -- Hide both frames first to ensure cleaner swap
+    if self.MainFrame then self.MainFrame:Hide() end
+    if self.ClassicFrame then self.ClassicFrame:Hide() end
+    
+    -- Always show the requested theme frame when toggling settings
+    -- The user is likely previewing the change.
+    local theme = self.db.profile.theme
+    if theme == "classic" then
+         if not self.ClassicFrame then self:CreateClassicFrame() end
+         self.ClassicFrame:Show()
+    else
+         if not self.MainFrame then self:CreateFrame() end
+         self.MainFrame:Show()
+    end
+end
+
 function Baggy:UpdateBags()
+    -- Dispatch based on theme
+    if self.db.profile.theme == "classic" then
+        if self.UpdateClassicBags then
+             self:UpdateClassicBags()
+        end
+        return
+    end
+
+    -- Modern Logic
     if not BaggyFrame or not BaggyFrame:IsShown() then return end
 
     local COLS = self.db.profile.slotsPerRow
@@ -493,14 +519,25 @@ end
 -----------------------------------------------------------
 
 function Baggy:Toggle()
-    if BaggyFrame:IsShown() then
-        BaggyFrame:Hide()
+    local theme = self.db.profile.theme
+    
+    if theme == "classic" then
+        if self.ClassicFrame and self.ClassicFrame:IsShown() then
+            self.ClassicFrame:Hide()
+        else
+            CloseAllBags()
+            if not self.ClassicFrame then self:CreateClassicFrame() end
+            self.ClassicFrame:Show()
+        end
     else
-        -- Close all Blizzard bags before showing Baggy
-        CloseAllBags()
-        
-        -- Show Baggy
-        BaggyFrame:Show()
+        -- Modern
+        if BaggyFrame and BaggyFrame:IsShown() then
+            BaggyFrame:Hide()
+        else
+            CloseAllBags()
+            if not BaggyFrame then self:CreateFrame() end
+            BaggyFrame:Show()
+        end
     end
 end
 function Baggy:OnEnable()
@@ -517,8 +554,10 @@ function Baggy:OnInitialize()
     -- Initialize database with defaults from Settings module
     self.db = AceDB:New("BaggyDB", self.DB_DEFAULTS, "Default")
 
+
     self:CreateFrame()
-    print("|cFF00FF00Baggy:|r Frame created")
+    self:CreateClassicFrame()
+    print("|cFF00FF00Baggy:|r Frames initialized")
 
     -- Create LibDataBroker object
     local BaggyLDB = LDB:NewDataObject("Baggy", {

@@ -25,6 +25,7 @@ Baggy.CONSTANTS = {
 Baggy.DB_DEFAULTS = {
     profile = {
         minimap = { hide = false },
+        theme = "modern",
         slotSize = 37,
         slotsPerRow = 18,
         showQualityBorder = true,
@@ -300,6 +301,24 @@ function Baggy:CreateSettingsFrame()
     title:SetText("Baggy Settings")
     title:SetTextColor(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 1)
     settings.title = title
+    
+    -- Theme Toggle
+    local themeBtn = CreateFrame("Button", "BaggyThemeToggle", settings, "UIPanelButtonTemplate")
+    themeBtn:SetSize(120, 24)
+    themeBtn:SetPoint("TOP", title, "BOTTOM", 0, -10)
+    themeBtn:SetText(self.db.profile.theme == "modern" and "Theme: Modern" or "Theme: Classic")
+    
+    themeBtn:SetScript("OnClick", function()
+        if Baggy.db.profile.theme == "modern" then
+            Baggy.db.profile.theme = "classic"
+            themeBtn:SetText("Theme: Classic")
+        else
+            Baggy.db.profile.theme = "modern"
+            themeBtn:SetText("Theme: Modern")
+        end
+        Baggy:UpdateTheme()
+    end)
+    settings.themeBtn = themeBtn
     
     -- Close Button
     local close = CreateFrame("Button", nil, settings, "UIPanelCloseButton")
