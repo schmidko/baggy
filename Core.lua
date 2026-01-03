@@ -144,8 +144,9 @@ function Baggy:UpdateBags()
     local numItems = #items
     local numRows = math.ceil(numItems / COLS)
     
-    local width = (COLS * slotSize) + ((COLS - 1) * SLOT_SPACING) + (PADDING * 2)
-    local height = (numRows * slotSize) + ((numRows - 1) * SLOT_SPACING) + PADDING + HEADER_SIZE + FOOTER_SIZE
+    local slotSpacing = self.db.profile.slotSpacing or 4
+    local width = (COLS * slotSize) + ((COLS - 1) * slotSpacing) + (PADDING * 2)
+    local height = (numRows * slotSize) + ((numRows - 1) * slotSpacing) + PADDING + HEADER_SIZE + FOOTER_SIZE
     BaggyFrame:SetSize(width, height)
 
     if not self.slots then self.slots = {} end
@@ -258,8 +259,8 @@ function Baggy:UpdateBags()
         slot:ClearAllPoints()
         slot:SetSize(slotSize, slotSize)
         slot:SetPoint("TOPLEFT", BaggyFrame, "TOPLEFT", 
-            PADDING + (col * (slotSize + SLOT_SPACING)), 
-            -(HEADER_SIZE + (row * (slotSize + SLOT_SPACING))))
+            PADDING + (col * (slotSize + slotSpacing)), 
+            -(HEADER_SIZE + (row * (slotSize + slotSpacing))))
         
         slot:Show()
         

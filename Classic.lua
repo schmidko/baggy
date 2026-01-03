@@ -70,8 +70,9 @@ function Baggy:UpdateClassicBags()
     local numItems = #items
     local numRows = math.ceil(numItems / COLS)
     
-    local width = (COLS * slotSize) + ((COLS - 1) * SLOT_SPACING) + (PADDING * 2)
-    local height = (numRows * slotSize) + ((numRows - 1) * SLOT_SPACING) + PADDING + HEADER_SIZE + FOOTER_SIZE
+    local slotSpacing = self.db.profile.slotSpacing or 4
+    local width = (COLS * slotSize) + ((COLS - 1) * slotSpacing) + (PADDING * 2)
+    local height = (numRows * slotSize) + ((numRows - 1) * slotSpacing) + PADDING + HEADER_SIZE + FOOTER_SIZE
     
     ClassicFrame:SetSize(width, height)
 
@@ -166,10 +167,17 @@ function Baggy:UpdateClassicBags()
         end
         
         slot:ClearAllPoints()
-        slot:SetSize(slotSize, slotSize)
-        slot:SetPoint("TOPLEFT", ClassicFrame, "TOPLEFT", 
-            PADDING + (col * (slotSize + SLOT_SPACING)), 
-            -(HEADER_SIZE + (row * (slotSize + SLOT_SPACING))))
+        -- Use SetScale for Classic buttons as the template has fixed-size internal textures
+        slot:SetSize(SLOT_SIZE, SLOT_SIZE)
+        local slotSpacing = self.db.profile.slotSpacing or 4
+        local scale = slotSize / SLOT_SIZE
+        slot:SetScale(scale)
+        
+        -- Adjust offsets by scale because SetPoint uses local scaled coordinates
+        local xOff = (PADDING + (col * (slotSize + slotSpacing))) / scale
+        local yOff = -(HEADER_SIZE + (row * (slotSize + slotSpacing))) / scale
+        
+        slot:SetPoint("TOPLEFT", ClassicFrame, "TOPLEFT", xOff, yOff)
             
         slot:Show()
         
@@ -270,15 +278,38 @@ function Baggy:CreateClassicFrame()
     -- We just need to handle content background if needed or leave as is.
     
     -- Settings Toggle (Settings Button) at the top right
-    local settingsBtn = CreateFrame("Button", "BaggyClassicSettingsButton", frame, "UIPanelButtonTemplate")
-    settingsBtn:SetSize(22, 22)
+    -- Using a standard button template, but we'll apply a gear icon
+    local settingsBtn = CreateFrame("Button", "BaggyClassicSettingsButton", frame, "UIPanelButtonTemplate") 
+    settingsBtn:SetSize(24, 24)
     settingsBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -28)
     
-    local gearIcon = settingsBtn:CreateTexture(nil, "ARTWORK")
-    gearIcon:SetTexture("Interface\\AddOns\\Baggy\\assets\\settings")
-    gearIcon:SetAllPoints()
-    gearIcon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
-    settingsBtn:SetNormalTexture(gearIcon)
+    -- Use the "Close Button" style (Red) as background to match the user's image
+    settingsBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+    settingsBtn:GetNormalTexture():SetTexCoord(0, 1, 0, 1)
+    
+    settingsBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+    settingsBtn:GetPushedTexture():SetTexCoord(0, 1, 0, 1)
+
+    settingsBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+    settingsBtn:GetHighlightTexture():SetTexCoord(0, 1, 0, 1)
+    
+    -- Overlay the Gear Icon (Gold) on top of the red button
+    -- We size it slightly smaller to fit nicely within the border
+    local gearIcon = settingsBtn:CreateTexture(nil, "OVERLAY")
+    gearIcon:SetTexture("Interface\\Buttons\\UI-OptionsButton")
+    gearIcon:SetSize(16, 16)
+    gearIcon:SetPoint("CENTER", 0, 0)
+    settingsBtn.icon = gearIcon
+    
+    -- Manually offset the icon when pushed to match the button press animation
+    settingsBtn:SetScript("OnMouseDown", function(self) 
+        if self:IsEnabled() then 
+            self.icon:SetPoint("CENTER", 1, -1) 
+        end 
+    end)
+    settingsBtn:SetScript("OnMouseUp", function(self) 
+        self.icon:SetPoint("CENTER", 0, 0) 
+    end)
     
     settingsBtn:SetScript("OnClick", function()
         if not Baggy.settingsFrame then

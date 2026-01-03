@@ -27,6 +27,7 @@ Baggy.DB_DEFAULTS = {
         minimap = { hide = false },
         theme = "modern",
         slotSize = 37,
+        slotSpacing = 4,
         slotsPerRow = 18,
         showQualityBorder = true,
         bagOpacity = 0.5,
@@ -327,18 +328,31 @@ function Baggy:CreateSettingsFrame()
     -- Register for ESC close
     tinsert(UISpecialFrames, "BaggySettingsFrame")
 
+    -- Scroll Frame
+    local scrollFrame = CreateFrame("ScrollFrame", "BaggySettingsScrollFrame", settings, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", settings, "TOPLEFT", 10, -90)
+    scrollFrame:SetPoint("BOTTOMRIGHT", settings, "BOTTOMRIGHT", -30, 20)
+    
+    local scrollChild = CreateFrame("Frame", "BaggySettingsScrollChild", scrollFrame)
+    scrollChild:SetSize(340, 700) -- Explicit width to fit sliders, height to handle scrolling
+    scrollFrame:SetScrollChild(scrollChild)
+
     -- Helper: Create Stylish Header
     local function CreateHeader(text, relativeTo, yOffset)
-        local header = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        header:SetPoint("TOPLEFT", relativeTo, "BOTTOMLEFT", 0, yOffset or -20)
+        local header = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        if relativeTo then
+            header:SetPoint("TOPLEFT", relativeTo, "BOTTOMLEFT", 0, yOffset or -20)
+        else
+            header:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 10, -10)
+        end
         header:SetText(text)
         header:SetTextColor(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 1)
         
         -- Underline
-        local line = settings:CreateTexture(nil, "ARTWORK")
+        local line = scrollChild:CreateTexture(nil, "ARTWORK")
         line:SetHeight(2)
         line:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -2)
-        line:SetPoint("RIGHT", settings, "RIGHT", -20, 0)
+        line:SetPoint("RIGHT", scrollChild, "RIGHT", -10, 0)
         line:SetColorTexture(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 0.5)
         
         return header
@@ -348,29 +362,20 @@ function Baggy:CreateSettingsFrame()
     -- SECTION: Layout
     -- ===========================
     
-    -- Anchor for first element (Header) - relative to title
-    local layoutHeader = settings:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    layoutHeader:SetPoint("TOPLEFT", settings, "TOPLEFT", 20, -50)
-    layoutHeader:SetText("Layout")
-    layoutHeader:SetTextColor(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 1)
-    
-    local layoutLine = settings:CreateTexture(nil, "ARTWORK")
-    layoutLine:SetHeight(2)
-    layoutLine:SetPoint("TOPLEFT", layoutHeader, "BOTTOMLEFT", 0, -2)
-    layoutLine:SetPoint("RIGHT", settings, "RIGHT", -20, 0)
-    layoutLine:SetColorTexture(self.db.profile.borderColor.r, self.db.profile.borderColor.g, self.db.profile.borderColor.b, 0.5)
+    -- Anchor for first element (Header)
+    local layoutHeader = CreateHeader("Layout", nil)
 
     -- Slot Size Slider
-    local slotSizeLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local slotSizeLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     slotSizeLabel:SetPoint("TOPLEFT", layoutHeader, "BOTTOMLEFT", 0, -20)
     slotSizeLabel:SetText("Item Slot Size:")
     
-    local slotSizeSlider = CreateFrame("Slider", "BaggySlotSizeSlider", settings, "OptionsSliderTemplate")
+    local slotSizeSlider = CreateFrame("Slider", "BaggySlotSizeSlider", scrollChild, "OptionsSliderTemplate")
     slotSizeSlider:SetPoint("TOPLEFT", slotSizeLabel, "BOTTOMLEFT", 0, -10)
     slotSizeSlider:SetMinMaxValues(25, 50)
     slotSizeSlider:SetValueStep(1)
     slotSizeSlider:SetObeyStepOnDrag(true)
-    slotSizeSlider:SetWidth(350)
+    slotSizeSlider:SetWidth(330)
     slotSizeSlider:SetValue(self.db.profile.slotSize)
     _G[slotSizeSlider:GetName().."Low"]:SetText("25")
     _G[slotSizeSlider:GetName().."High"]:SetText("50")
@@ -384,16 +389,16 @@ function Baggy:CreateSettingsFrame()
     end)
     
     -- Slots Per Row Slider
-    local slotsPerRowLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local slotsPerRowLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     slotsPerRowLabel:SetPoint("TOPLEFT", slotSizeSlider, "BOTTOMLEFT", 0, -20)
     slotsPerRowLabel:SetText("Slots Per Row:")
     
-    local slotsPerRowSlider = CreateFrame("Slider", "BaggySlotsPerRowSlider", settings, "OptionsSliderTemplate")
+    local slotsPerRowSlider = CreateFrame("Slider", "BaggySlotsPerRowSlider", scrollChild, "OptionsSliderTemplate")
     slotsPerRowSlider:SetPoint("TOPLEFT", slotsPerRowLabel, "BOTTOMLEFT", 0, -10)
     slotsPerRowSlider:SetMinMaxValues(4, 20)
     slotsPerRowSlider:SetValueStep(1)
     slotsPerRowSlider:SetObeyStepOnDrag(true)
-    slotsPerRowSlider:SetWidth(350)
+    slotsPerRowSlider:SetWidth(330)
     slotsPerRowSlider:SetValue(self.db.profile.slotsPerRow)
     _G[slotsPerRowSlider:GetName().."Low"]:SetText("4")
     _G[slotsPerRowSlider:GetName().."High"]:SetText("20")
@@ -407,16 +412,16 @@ function Baggy:CreateSettingsFrame()
     end)
     
     -- Border Width Slider (New)
-    local borderWidthLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local borderWidthLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     borderWidthLabel:SetPoint("TOPLEFT", slotsPerRowSlider, "BOTTOMLEFT", 0, -20)
     borderWidthLabel:SetText("Border Width:")
     
-    local borderWidthSlider = CreateFrame("Slider", "BaggyBorderWidthSlider", settings, "OptionsSliderTemplate")
+    local borderWidthSlider = CreateFrame("Slider", "BaggyBorderWidthSlider", scrollChild, "OptionsSliderTemplate")
     borderWidthSlider:SetPoint("TOPLEFT", borderWidthLabel, "BOTTOMLEFT", 0, -10)
     borderWidthSlider:SetMinMaxValues(1, 5)
     borderWidthSlider:SetValueStep(1)
     borderWidthSlider:SetObeyStepOnDrag(true)
-    borderWidthSlider:SetWidth(350)
+    borderWidthSlider:SetWidth(330)
     borderWidthSlider:SetValue(self.db.profile.borderWidth)
     _G[borderWidthSlider:GetName().."Low"]:SetText("1")
     _G[borderWidthSlider:GetName().."High"]:SetText("5")
@@ -429,19 +434,42 @@ function Baggy:CreateSettingsFrame()
         Baggy:UpdateColors() -- Updates border size too using SetBackdrop in Core
     end)
 
+    -- Item Slot Spacing Slider (New)
+    local slotSpacingLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    slotSpacingLabel:SetPoint("TOPLEFT", borderWidthSlider, "BOTTOMLEFT", 0, -20)
+    slotSpacingLabel:SetText("Item Slot Spacing:")
+    
+    local slotSpacingSlider = CreateFrame("Slider", "BaggySlotSpacingSlider", scrollChild, "OptionsSliderTemplate")
+    slotSpacingSlider:SetPoint("TOPLEFT", slotSpacingLabel, "BOTTOMLEFT", 0, -10)
+    slotSpacingSlider:SetMinMaxValues(0, 20)
+    slotSpacingSlider:SetValueStep(1)
+    slotSpacingSlider:SetObeyStepOnDrag(true)
+    slotSpacingSlider:SetWidth(330)
+    slotSpacingSlider:SetValue(self.db.profile.slotSpacing)
+    _G[slotSpacingSlider:GetName().."Low"]:SetText("0")
+    _G[slotSpacingSlider:GetName().."High"]:SetText("20")
+    _G[slotSpacingSlider:GetName().."Text"]:SetText(self.db.profile.slotSpacing .. " px")
+    
+    slotSpacingSlider:SetScript("OnValueChanged", function(self, value)
+        value = math.floor(value + 0.5)
+        _G[self:GetName().."Text"]:SetText(value .. " px")
+        Baggy.db.profile.slotSpacing = value
+        Baggy:UpdateBags()
+    end)
+
     -- ===========================
     -- SECTION: Appearance
     -- ===========================
 
-    local appearanceHeader = CreateHeader("Appearance", borderWidthSlider, -30)
+    local appearanceHeader = CreateHeader("Appearance", slotSpacingSlider, -80)
 
     -- Quality Border Checkbox
-    local qualityCheckbox = CreateFrame("CheckButton", "BaggyQualityBorderCheckbox", settings, "UICheckButtonTemplate")
+    local qualityCheckbox = CreateFrame("CheckButton", "BaggyQualityBorderCheckbox", scrollChild, "UICheckButtonTemplate")
     qualityCheckbox:SetPoint("TOPLEFT", appearanceHeader, "BOTTOMLEFT", 0, -20)
     qualityCheckbox:SetSize(24, 24)
     qualityCheckbox:SetChecked(self.db.profile.showQualityBorder)
     
-    local qualityLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local qualityLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     qualityLabel:SetPoint("LEFT", qualityCheckbox, "RIGHT", 5, 0)
     qualityLabel:SetText("Show Quality Border Colors")
     
@@ -451,11 +479,11 @@ function Baggy:CreateSettingsFrame()
     end)
     
     -- Border Color
-    local borderColorLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local borderColorLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     borderColorLabel:SetPoint("TOPLEFT", qualityCheckbox, "BOTTOMLEFT", 0, -20)
     borderColorLabel:SetText("Border:")
     
-    local borderColorSwatch = CreateFrame("Button", nil, settings, "BackdropTemplate")
+    local borderColorSwatch = CreateFrame("Button", nil, scrollChild, "BackdropTemplate")
     borderColorSwatch:SetSize(120, 25)
     borderColorSwatch:SetPoint("LEFT", borderColorLabel, "RIGHT", 15, 0)
     borderColorSwatch:SetBackdrop({
@@ -482,16 +510,16 @@ function Baggy:CreateSettingsFrame()
     settings.borderSwatch = borderColorSwatch
 
     -- Bag Opacity Slider
-    local opacityLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local opacityLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     opacityLabel:SetPoint("TOPLEFT", borderColorLabel, "BOTTOMLEFT", 0, -20)
     opacityLabel:SetText("Bag Window Transparency:")
     
-    local opacitySlider = CreateFrame("Slider", "BaggyOpacitySlider", settings, "OptionsSliderTemplate")
+    local opacitySlider = CreateFrame("Slider", "BaggyOpacitySlider", scrollChild, "OptionsSliderTemplate")
     opacitySlider:SetPoint("TOPLEFT", opacityLabel, "BOTTOMLEFT", 0, -10)
     opacitySlider:SetMinMaxValues(0.1, 1.0)
     opacitySlider:SetValueStep(0.05)
     opacitySlider:SetObeyStepOnDrag(true)
-    opacitySlider:SetWidth(350)
+    opacitySlider:SetWidth(330)
     opacitySlider:SetValue(self.db.profile.bagOpacity)
     _G[opacitySlider:GetName().."Low"]:SetText("10%")
     _G[opacitySlider:GetName().."High"]:SetText("100%")
